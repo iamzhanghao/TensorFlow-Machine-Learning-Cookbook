@@ -23,9 +23,9 @@ import tarfile
 import urllib.request
 import text_helpers
 from nltk.corpus import stopwords
-from tensorflow.python.framework import ops
+# from tensorflow.v1.compat.python.framework import ops
 
-ops.reset_default_graph()
+# ops.reset_default_graph()
 
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
@@ -35,7 +35,7 @@ if not os.path.exists(data_folder_name):
     os.makedirs(data_folder_name)
 
 # Start a graph session
-sess = tf.Session()
+sess = tf.compat.v1.Session() 
 
 # Declare model parameters
 batch_size = 500
@@ -87,17 +87,17 @@ valid_examples = [word_dictionary[x] for x in valid_words]
 
 print('Creating Model')
 # Define Embeddings:
-embeddings = tf.Variable(tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0))
-doc_embeddings = tf.Variable(tf.random_uniform([len(texts), doc_embedding_size], -1.0, 1.0))
+embeddings = tf.Variable(tf.compat.v1.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0))
+doc_embeddings = tf.Variable(tf.compat.v1.random_uniform([len(texts), doc_embedding_size], -1.0, 1.0))
 
 # NCE loss parameters
-nce_weights = tf.Variable(tf.truncated_normal([vocabulary_size, concatenated_size],
+nce_weights = tf.Variable(tf.compat.v1.truncated_normal([vocabulary_size, concatenated_size],
                                               stddev=1.0 / np.sqrt(concatenated_size)))
 nce_biases = tf.Variable(tf.zeros([vocabulary_size]))
 
 # Create data/target placeholders
-x_inputs = tf.placeholder(tf.int32, shape=[None, window_size + 1])  # plus 1 for doc index
-y_target = tf.placeholder(tf.int32, shape=[None, 1])
+x_inputs = tf.compat.v1.placeholder(tf.int32, shape=[None, window_size + 1])  # plus 1 for doc index
+y_target = tf.compat.v1.placeholder(tf.int32, shape=[None, 1])
 valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
 
 # Lookup the word embedding
@@ -117,7 +117,7 @@ loss = tf.reduce_mean(tf.nn.nce_loss(nce_weights, nce_biases, final_embed, y_tar
                                      num_sampled, vocabulary_size))
 
 # Create optimizer
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=model_learning_rate)
+optimizer = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=model_learning_rate)
 train_step = optimizer.minimize(loss)
 
 # Cosine similarity between words
@@ -127,10 +127,10 @@ valid_embeddings = tf.nn.embedding_lookup(normalized_embeddings, valid_dataset)
 similarity = tf.matmul(valid_embeddings, normalized_embeddings, transpose_b=True)
 
 # Create model saving operation
-saver = tf.train.Saver({"embeddings": embeddings, "doc_embeddings": doc_embeddings})
+saver = tf.compat.v1.train.Saver({"embeddings": embeddings, "doc_embeddings": doc_embeddings})
 
 # Add variable initializer.
-init = tf.global_variables_initializer()
+init = tf.compat.v1.global_variables_initializer()
 sess.run(init)
 
 # Run the skip gram model.
@@ -215,8 +215,8 @@ log_final_embed = tf.concat(1, [log_embed, tf.squeeze(log_doc_embed)])
 
 # Define model:
 # Create variables for logistic regression
-A = tf.Variable(tf.random_normal(shape=[concatenated_size, 1]))
-b = tf.Variable(tf.random_normal(shape=[1, 1]))
+A = tf.Variable(tf.compat.v1.random_normal(shape=[concatenated_size, 1]))
+b = tf.Variable(tf.compat.v1.random_normal(shape=[1, 1]))
 
 # Declare logistic model (sigmoid in loss function)
 model_output = tf.add(tf.matmul(log_final_embed, A), b)
@@ -231,11 +231,11 @@ predictions_correct = tf.cast(tf.equal(prediction, tf.cast(log_y_target, tf.floa
 accuracy = tf.reduce_mean(predictions_correct)
 
 # Declare optimizer
-logistic_opt = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+logistic_opt = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=0.01)
 logistic_train_step = logistic_opt.minimize(logistic_loss, var_list=[A, b])
 
 # Intitialize Variables
-init = tf.global_variables_initializer()
+init = tf.compat.v1.global_variables_initializer()
 sess.run(init)
 
 # Start Logistic Regression
